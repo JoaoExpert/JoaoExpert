@@ -329,9 +329,44 @@
         </div>
     </div>
 
+    <!-- Suri ChatBot Integration -->
     <script>
         let chatOpen = false;
+        let suriWebChat = null;
 
+        // Integração com Suri
+        window.cbAsyncInit = function () {
+            CBM.ChatbotId = "cb25756920"; // ID do seu chatbot Suri
+            CBM.StartWebChat().then(webChat => {
+                suriWebChat = webChat;
+                console.log('Suri WebChat iniciado com sucesso!');
+                
+                // Escutar mensagens do Suri
+                webChat.onMessageReceived = function(message) {
+                    hideTypingIndicator();
+                    addMessage(message.text, 'bot');
+                };
+                
+                // Inicializar conversa
+                initializeSuriChat();
+                
+            }).catch(reason => {
+                console.error('Erro ao inicializar Suri:', reason);
+                // Fallback para mensagens simuladas se Suri falhar
+                showFallbackMessage();
+            });
+        };
+
+        // Carregar SDK do Suri
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) { return; }
+            js = d.createElement(s); js.id = id;
+            js.src = "https://webchat.chatbotmaker.io/cbm-jssdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'cbm-jssdk'));
+
+        // Funções da interface
         function toggleChat() {
             const chatContainer = document.getElementById('chatContainer');
             chatOpen = !chatOpen;
@@ -350,11 +385,39 @@
             
             if (message === '') return;
             
-            // Adicionar mensagem do usuário
+            // Adicionar mensagem do usuário na interface
             addMessage(message, 'user');
             input.value = '';
             
-            // Simular resposta do bot
+            // Enviar para Suri se disponível
+            if (suriWebChat) {
+                showTypingIndicator();
+                try {
+                    suriWebChat.sendMessage(message);
+                } catch (error) {
+                    console.error('Erro ao enviar mensagem para Suri:', error);
+                    hideTypingIndicator();
+                    addMessage('Desculpe, houve um erro. Tente novamente.', 'bot');
+                }
+            } else {
+                // Fallback se Suri não estiver disponível
+                simulateResponse(message);
+            }
+        }
+
+        function initializeSuriChat() {
+            // Mensagem inicial pode ser personalizada aqui
+            // Se o Suri tiver uma mensagem de boas-vindas automática, 
+            // ela aparecerá através do onMessageReceived
+        }
+
+        function showFallbackMessage() {
+            setTimeout(() => {
+                addMessage('Olá! Nosso sistema está carregando. Em que posso ajudá-lo?', 'bot');
+            }, 1000);
+        }
+
+        function simulateResponse(userMessage) {
             showTypingIndicator();
             
             setTimeout(() => {
